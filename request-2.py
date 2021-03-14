@@ -1,7 +1,7 @@
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-import pathlib
+import os
 
 
 
@@ -10,6 +10,7 @@ form_name = input("please enter form number here: ")
 min_year = input("please enter the minimum year here: ")
 max_year = input("please enter the maximum year here: ")
 
+# Takes input and retruns a list of files links
 def irs_form(form_name, min_year, max_year):
 
     modi_form_name = form_name.replace(' ', '+')
@@ -18,11 +19,12 @@ def irs_form(form_name, min_year, max_year):
 
     df = pd.read_html(url)[3]
 
-
+#   Filter IRS web content and extract the targeted table
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
     table = soup.find_all('table')[3]
 
+#   Pull out links from table and append to a list
     links = []
     for tr in table.findAll("tr"):
         trs = tr.findAll("td")
@@ -38,12 +40,21 @@ def irs_form(form_name, min_year, max_year):
     df = df[df['Product Number'] == form_name]
 
     df = df[df['Revision Date'].astype(str).between(min_year, max_year, inclusive=True)]
-    # df = df[filtered_df]
-    return df['Link'].tolist()
-print(irs_form(form_name, min_year, max_year))
+     
+    links_list = df['Link'].tolist()
+    return links_list
 
-def download_links(links_list):
-    for link in links_list:
-        r = requests.get(link)
-        pathlib.Path(f'/{form_name}').mkdir(exist_ok=True)
-        open('{form_name}-year', 'wb').write(r.content)
+
+
+irs_links_list = irs_form(form_name, min_year, max_year)
+
+# Create subdirectory and save downloaded files
+for link in irs_links_list:
+    r = requests.get(link)
+    if not os.path.exists(f'{form_name}'):
+        os.makedirs(f'{form_name}')
+    os.chdir(f'{form_name}')  
+    file_year = link[len(link)-8:len(link)-4]
+    save_name = f'{form_name}-{file_year}.pdf'
+    open(save_name, 'wb').write(r.content)
+    os.chdir('..')

@@ -3,9 +3,9 @@ import json
 import requests
 from bs4 import BeautifulSoup
 
-ilist = ['Form W-2', 'Form 1095-C', 'Form 1099-MISC', 'Form W-2 P']
+irs_list = ['Form W-2', 'Form 1095-C', 'Form 1099-MISC', 'Form W-2 P']
 
-
+# Takes a form name and returns a JSON format as requierd
 def irs_form(form_name):
 
     modi_form_name = form_name.replace(' ', '+')
@@ -14,11 +14,12 @@ def irs_form(form_name):
 
     df = pd.read_html(url)[3]
 
-
+#   Filter IRS web content and extract the targeted table
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
     table = soup.find_all('table')[3]
 
+#   Pull out links from table and append to dataframe
     links = []
     for tr in table.findAll("tr"):
         trs = tr.findAll("td")
@@ -32,6 +33,8 @@ def irs_form(form_name):
     df['Link'] = links
 
     df = df[df['Product Number'] == form_name]
+
+#   Format output as required
     new_result = {
     "form_number": df.iloc[1,0],
     "form_title": df.iloc[1,1],
@@ -42,9 +45,12 @@ def irs_form(form_name):
     return output
 
 
-def irs_forms(ilist):
+# Take a list (IRS form names), returns a list of required JSON output
+def irs_forms(irs_list):
     output_list = []
-    for element in ilist:
+    for element in irs_list:
         output_list.append(irs_form(element))
     return output_list
-print(irs_forms(ilist))
+    
+# Print for verification
+print(irs_forms(irs_list))
