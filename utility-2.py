@@ -17,12 +17,22 @@ def irs_form(form_name, min_year, max_year):
 
     url = f'https://apps.irs.gov/app/picklist/list/priorFormPublication.html?resultsPerPage=200&sortColumn=sortOrder&indexOfFirstRow=0&criteria=formNumber&value={modi_form_name}&isDescending=false'
 
-    df = pd.read_html(url)[3]
+# Handle input error
+    try:
+        df = pd.read_html(url)[3]
+    except:
+        df = []
+        links_list = []
+        print(f'There is not exact match to {form_name}, please try again!')
+        
+        return links_list
+    # df = pd.read_html(url)[3]
 
 #   Filter IRS web content and extract the targeted table
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
     table = soup.find_all('table')[3]
+
 
 #   Pull out links from table and append to a list
     links = []
